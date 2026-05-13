@@ -23,6 +23,7 @@ import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.pgvector.PgVectorStore;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -47,10 +48,13 @@ public class LoveApp {
 
     private final ToolCallback[] allTools;
 
+    private final ToolCallbackProvider toolCallbackProvider;
+
     public LoveApp(ChatClient chatClient,
                    @Qualifier("vectorStore") VectorStore vectorStore,
                    RetrievalAugmentationAdvisor loveAppRagCloudAdvisor,
-                   ToolCallback[] toolCallback) {
+                   ToolCallback[] toolCallback,
+                   ToolCallbackProvider toolCallbackProvider) {
         this.chatClient = chatClient;
         // 初始化基于pgsql的向量数据库对象
         this.pgVectorStore = vectorStore;
@@ -59,6 +63,7 @@ public class LoveApp {
         // 初始化问题回答拦截器对象
         this.questionAnswerAdvisor = QuestionAnswerAdvisor.builder(vectorStore).build();
         this.allTools = toolCallback;
+        this.toolCallbackProvider = toolCallbackProvider;
     }
 
     /**
@@ -156,6 +161,28 @@ public class LoveApp {
                 // 开启日志，便于观察效果
                 .advisors(new MyLoggerAdvisor())
                 .toolCallbacks(allTools)
+                .call()
+                .chatResponse();
+        String content = chatResponse.getResult().getOutput().getText();
+        log.info("content: {}", content);
+        return content;
+    }
+
+    /**
+     * AI 恋爱报告功能（调用 MCP 服务）
+     *
+     * @param message
+     * @param chatId
+     * @return
+     */
+    public String doChatWithMcp(String message, String chatId) {
+        ChatResponse chatResponse = chatClient
+                .prompt()
+                .user(message)
+                .advisors(spec -> spec.param(ChatMemory.CONVERSATION_ID, chatId))
+                // 开启日志，便于观察效果
+                .advisors(new MyLoggerAdvisor())
+                .toolCallbacks(toolCallbackProvider)
                 .call()
                 .chatResponse();
         String content = chatResponse.getResult().getOutput().getText();
