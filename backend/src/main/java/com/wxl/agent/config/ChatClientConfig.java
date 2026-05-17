@@ -18,8 +18,12 @@ public class ChatClientConfig {
             "恋爱状态询问沟通、习惯差异引发的矛盾；已婚状态询问家庭责任与亲属关系处理的问题。" +
             "引导用户详述事情经过、对方反应及自身想法，以便给出专属解决方案。";
 
-    @Bean
-    public ChatClient myChatClient(ChatMemoryRepository jdbcChatMemoryRepository,
+    /**
+     * 恋爱助手专用的 ChatClient
+     * 绑定了固定人设和对话记忆
+     */
+    @Bean("loveAppChatClient")
+    public ChatClient loveAppChatClient(ChatMemoryRepository jdbcChatMemoryRepository,
                                    ChatModel dashscopeChatModel) {
         //        // 初始化基于文件的对话记忆
 //        val inMemoryChatMemoryRepository = new InMemoryChatMemoryRepository();
@@ -39,6 +43,18 @@ public class ChatClientConfig {
 //                        // 自定义推理增强 Advisor，可按需开启
 //                       ,new ReReadingAdvisor()
                 )
+                .build();
+    }
+
+    /**
+     * 智能体专用的 ChatClient
+     * 只配置日志，不绑定固定人设（人设由智能体动态传入）
+     */
+    @Bean("agentChatClient") // ← 显式命名为 agentChatClient
+    public ChatClient agentChatClient(ChatModel dashscopeChatModel) {
+        return ChatClient.builder(dashscopeChatModel)
+//                .defaultAdvisors(new MyLoggerAdvisor()) // 只配日志拦截器
+                // 注意：没有 .defaultSystem()，人设由 ToolCallAgent.think() 动态传入
                 .build();
     }
 }

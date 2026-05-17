@@ -16,12 +16,12 @@ spring:
         distance-type: COSINE_DISTANCE
         max-document-batch-size: 10000 # Optional: Maximum number of documents per batch
         initialize-schema: true
-    mcp:
-      client:
-        sse:
-          connections:
-            image-search:   # 可以同时配置多个服务端
-              url: http://localhost:8082 # 换成你服务端实际运行的地址
+#    mcp:
+#      client:
+#        sse:
+#          connections:
+#            image-search:   # 可以同时配置多个服务端
+##              url: http://localhost:8082 # 换成你服务端实际运行的地址
 #        stdio:
 #          servers-configuration: classpath:mcp-servers.json
 

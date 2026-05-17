@@ -50,7 +50,7 @@ public class LoveApp {
 
     private final ToolCallbackProvider toolCallbackProvider;
 
-    public LoveApp(ChatClient chatClient,
+    public LoveApp(@Qualifier("loveAppChatClient") ChatClient chatClient,
                    @Qualifier("vectorStore") VectorStore vectorStore,
                    RetrievalAugmentationAdvisor loveAppRagCloudAdvisor,
                    ToolCallback[] toolCallback,
