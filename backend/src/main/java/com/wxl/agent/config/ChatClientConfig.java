@@ -24,7 +24,7 @@ public class ChatClientConfig {
      */
     @Bean("loveAppChatClient")
     public ChatClient loveAppChatClient(ChatMemoryRepository jdbcChatMemoryRepository,
-                                   ChatModel dashscopeChatModel) {
+                                   ChatModel chatModel) {  //dashscopeChatModel
         //        // 初始化基于文件的对话记忆
 //        val inMemoryChatMemoryRepository = new InMemoryChatMemoryRepository();
 //        String fileDir = System.getProperty("user.dir") + "/tmp/chat-memory";
@@ -34,7 +34,7 @@ public class ChatClientConfig {
                 .chatMemoryRepository(jdbcChatMemoryRepository)
                 .maxMessages(10)  // 能记住5轮对话（因为1轮对话是2个消息）
                 .build();
-        return ChatClient.builder(dashscopeChatModel)
+        return ChatClient.builder(chatModel)
                 .defaultSystem(SYSTEM_PROMPT)
                 .defaultAdvisors(
                         MessageChatMemoryAdvisor.builder(chatMemory).build(),

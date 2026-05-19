@@ -1,8 +1,17 @@
 package com.wxl.agent.agent;
 
+import cn.hutool.core.util.StrUtil;
+import com.wxl.agent.agent.model.AgentState;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
+
+import java.util.List;
 
 /**
  * ReAct (Reasoning and Acting) 模式的代理抽象类
@@ -47,6 +56,51 @@ public abstract class ReActAgent extends BaseAgent {
             e.printStackTrace();
             return "步骤执行失败：" + e.getMessage();
         }
+    }
+
+    // 在 ReActAgent 中添加
+    public Flux<String> runStream(String userPrompt) {
+        return Flux.<String>create(sink -> {
+                    // 1. 基础校验与初始化（与同步 run 方法相同）
+                    if (getState() != AgentState.IDLE) {
+                        sink.error(new RuntimeException("无法从" + getState() + "状态运行代理"));
+                        return;
+                    }
+                    setState(AgentState.RUNNING);
+                    getMessageList().add(new UserMessage(userPrompt));
+
+                    // 2. 执行循环，每步结果实时推送
+                    for (int i = 0; i < getMaxSteps() && getState() != AgentState.FINISHED; i++) {
+                        int stepNumber = i + 1;
+                        setCurrentStep(stepNumber);
+                        String stepResult = step(); // 复用 step()！
+                        sink.next("Step " + stepNumber + ": " + getCurrentStepThinking()); // 实时推送
+                    }
+
+                    // 3. 处理完成与异常
+                    if (getCurrentStep() >= getMaxSteps()) {
+                        setState(AgentState.FINISHED);
+                        sink.next("执行结束：达到最大步骤 (" + getMaxSteps() + ")");
+                    }
+                    sink.complete();
+                }, FluxSink.OverflowStrategy.LATEST)
+                .doFinally(signalType -> cleanup());
+    }
+
+    /**
+     * 获取模型的助手消息
+     * @return
+     */
+    public String getCurrentStepThinking() {
+        List<Message> msgs = getMessageList();
+        // 从后往前找，找到最后一条有文本内容的 AssistantMessage
+        for (int i = msgs.size() - 1; i >= 0; i--) {
+            Message msg = msgs.get(i);
+            if (msg instanceof AssistantMessage am && StrUtil.isNotBlank(am.getText())) {
+                return am.getText();
+            }
+        }
+        return "正在思考...";
     }
 
 }

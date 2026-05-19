@@ -103,7 +103,7 @@ public abstract class BaseAgent {
      * @param userPrompt 用户提示词
      * @return 执行结果
      */
-    public SseEmitter runStream(String userPrompt) {
+    /*public SseEmitter runStream(String userPrompt) {
         // 创建一个超时时间较长的 SseEmitter
         SseEmitter sseEmitter = new SseEmitter(300000L); // 5 分钟超时
         // 使用线程异步处理，避免阻塞主线程
@@ -180,7 +180,7 @@ public abstract class BaseAgent {
             log.info("SSE connection completed");
         });
         return sseEmitter;
-    }
+    }*/
 
     /**
      * 定义单个步骤

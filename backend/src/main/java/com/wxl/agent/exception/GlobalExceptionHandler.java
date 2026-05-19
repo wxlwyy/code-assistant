@@ -15,6 +15,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.util.stream.Collectors;
+
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -82,10 +84,10 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(ConstraintViolationException.class)  // springboot2用javax的，3用jakarta的
     public BaseResponse<?> handleConstraintViolationException(ConstraintViolationException e, HttpServletRequest request) {
-        String message = e.getMessage();
-        if (message != null && message.contains(":")) {
-            message = message.substring(message.lastIndexOf(":") + 1).trim();
-        }
+        // 直接从 ConstraintViolation 对象中提取消息，比字符串截取更可靠
+        String message = e.getConstraintViolations().stream()
+                .map(violation -> violation.getMessage())
+                .collect(Collectors.joining(", "));
 
         log.warn("\n[Constraint Violation] \n" +
                         "Request URI: {}\n" +
@@ -119,13 +121,9 @@ public class GlobalExceptionHandler {
     public BaseResponse<?> handleUnknownException(Exception e, HttpServletRequest request) {
         // 1. 【核心优化】如果是 Spring 内置的 Web 异常（404, 405 等），直接原样抛出，让 Spring 自己处理
         // 这样就不会触发我们的 ERROR 日志，更不会让 Knife4j 报错
-        if (e instanceof ServletException || e instanceof org.springframework.web.servlet.resource.NoResourceFoundException) {
-            // 这里不记日志，直接交给 Spring，浏览器会收到标准的 404
-            try {
-                throw e;
-            } catch (Exception ex) {
-                // 这里只是语法要求的 catch，实际上会继续抛出
-            }
+        if (e instanceof org.springframework.web.servlet.resource.NoResourceFoundException) {
+            // 对于静态资源找不到的请求，直接返回 404，不记任何日志
+            return ResultUtils.error(ErrorCode.NOT_FOUND_ERROR, "资源不存在");
         }
 
         // 2. 【日志格式优化】修正你提到的“横线在堆栈后面”的问题
