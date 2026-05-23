@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.wxl</groupId>
+    <artifactId>ai-agent-parent</artifactId>
+    <version>1.0.0</version>
+    <packaging>pom</packaging>
+
+    <modules>
+        <module>backend</module>
+        <module>image-search-mcp-server</module>
+    </modules>
+</project>
+
+<!--
+1. 为什么根目录需要一个 pom.xml？原理是什么？
+这个根 pom.xml 叫 聚合 POM（Aggregator POM）。它的唯一作用就是告诉 Maven：“我下面有这些子模块，请统一管理它们。”
+它的工作原理：
+<packaging>pom</packaging>：声明自己不是一个可运行的 Jar 包，而是一个“项目管理员”。
+<modules>：列出子模块的目录名。Maven 读到这个列表，会去对应的子目录里找它们的 pom.xml，然后全部纳入同一个构建生命周期。
+统一构建：当你在根目录执行 mvn clean package，Maven 会按照模块依赖顺序，自动先构建被依赖的模块，再构建依赖它的模块。你不需要手动去每个目录下分别执行。
+为什么需要它？
+因为你的项目现在有两个平级的后端模块。聚合 POM 就是它们共同的“根”，让 IDEA 知道“这是一个项目，不是一个零散的文件夹”。
+2. 为什么现在只有一个 .idea？之前为什么会冒出来那么多？
+原理：IDEA 的 .idea 目录是“项目级”配置，不是“模块级”配置。
+之前（没有聚合 POM）：
+你可能是分别用 IDEA 打开过 backend、mcp-server 甚至 frontend 目录。
+每打开一个目录，IDEA 就会在那个目录下创建一个 .idea，把它当成一个独立项目。
+于是你就有了 backend/.idea、mcp-server/.idea、frontend/.idea 等多个项目配置。
+当你打开 backend 时，IDEA 只认识 backend 自己，不认识 mcp-server，因为它们是两个独立的 IDEA 项目。
+现在（有了聚合 POM）：
+你用聚合 POM 打开了整个 AI-Agent 目录。
+IDEA 识别到这是一个多模块项目，就把 .idea 建在了根目录 AI-Agent/ 下。
+这个 .idea 里记录了“项目包含哪些模块”、“每个模块的 pom.xml 在哪里”、“哪些目录是源码根”等所有信息。
+子目录不再需要单独的 .idea，因为它们已经被根 .idea 统一管理了。
+之前冒出来的原因：你多次用 IDEA 打开了不同的子目录。IDEA 每次都以为这是一个新项目，就创建了新的 .idea。
+现在只有一个的原因：你用聚合 POM 打开了整个仓库，IDEA 只创建一个项目配置，所有子模块都登记在这个配置里。
+-->

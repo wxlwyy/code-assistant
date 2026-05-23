@@ -2,6 +2,8 @@ package com.wxl.agent.controller;
 
 import com.wxl.agent.agent.Manus;
 import com.wxl.agent.app.LoveApp;
+import com.wxl.agent.common.BaseResponse;
+import com.wxl.agent.common.ResultUtils;
 import jakarta.annotation.Resource;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.ai.chat.client.ChatClient;
@@ -46,8 +48,9 @@ public class AiController {
      * @return
      */
     @GetMapping("/love_app/chat/sync")
-    public String doChatWithLoveAppSync(String message, String chatId) {
-        return loveApp.doChat(message, chatId);
+    public BaseResponse<String> doChatWithLoveAppSync(String message, String chatId) {
+        String content = loveApp.doChat(message, chatId);
+        return ResultUtils.success(content);
     }
 
     /**
@@ -61,8 +64,9 @@ public class AiController {
      * @return
      */
     @GetMapping(value = "/love_app/chat/sse", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<String> doChatWithLoveAppSSE(String message, String chatId) {
-        return loveApp.doChatByStream(message, chatId);
+    public BaseResponse<Flux<String>> doChatWithLoveAppSSE(String message, String chatId) {
+        Flux<String> stringFlux = loveApp.doChatByStream(message, chatId);
+        return ResultUtils.success(stringFlux);
     }
 
     /**
@@ -76,11 +80,12 @@ public class AiController {
      * @return
      */
     @GetMapping(value = "/love_app/chat/server_sent_event")
-    public Flux<ServerSentEvent<String>> doChatWithLoveAppServerSentEvent(String message, String chatId) {
-        return loveApp.doChatByStream(message, chatId)
+    public BaseResponse<Flux<ServerSentEvent<String>>> doChatWithLoveAppServerSentEvent(String message, String chatId) {
+        Flux<ServerSentEvent<String>> map = loveApp.doChatByStream(message, chatId)
                 .map(chunk -> ServerSentEvent.<String>builder()
                         .data(chunk)
                         .build());
+        return ResultUtils.success(map);
     }
 
     /**
@@ -119,10 +124,11 @@ public class AiController {
      * @param message
      * @return
      */
-    @GetMapping("/manus/chat/stream")
-    public Flux<String> doChatWithManusSSE(
+    @GetMapping("/manus/chat/sse")
+    public BaseResponse<Flux<String>> doChatWithManusSSE(
             @NotBlank(message = "用户提示词不能为空") String message) { // 参数上加约束注解
         Manus manus = new Manus(allTools, chatClient);
-        return manus.runStream(message);
+        Flux<String> stringFlux = manus.runStream(message);
+        return ResultUtils.success(stringFlux);
     }
 }
