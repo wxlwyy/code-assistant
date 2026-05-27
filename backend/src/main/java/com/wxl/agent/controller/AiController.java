@@ -1,14 +1,18 @@
 package com.wxl.agent.controller;
 
 import com.wxl.agent.agent.Manus;
+import com.wxl.agent.annotation.AuthCheck;
 import com.wxl.agent.app.LoveApp;
 import com.wxl.agent.common.BaseResponse;
 import com.wxl.agent.common.ResultUtils;
+import com.wxl.agent.constant.UserRoleConstant;
 import com.wxl.agent.model.dto.ai.AiChatRequest;
+import com.wxl.agent.model.dto.enums.UserRoleEnum;
 import com.wxl.agent.service.ChatSessionService;
 import jakarta.annotation.Resource;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -34,14 +38,18 @@ public class AiController {
 
     private final ChatSessionService chatSessionService;
 
+    private final ChatMemory chatMemory;
+
     public AiController(LoveApp loveApp,
                         ToolCallback[] allTools,
                         @Qualifier("agentChatClient") ChatClient chatClient,
-                        ChatSessionService chatSessionService) {
+                        ChatSessionService chatSessionService,
+                        ChatMemory chatMemory) {
         this.loveApp = loveApp;
         this.allTools = allTools;
         this.chatClient = chatClient;
         this.chatSessionService = chatSessionService;
+        this.chatMemory = chatMemory;
     }
 
     /**
@@ -76,8 +84,8 @@ public class AiController {
         String message = aiChatRequest.getMessage();
         chatSessionService.initSessionIfAbsent(chatId, message, "REASONING");
 
-        Manus manus = new Manus(allTools, chatClient);
-        return manus.runStream(message);
+        Manus manus = new Manus(allTools, chatClient, chatMemory);
+        return manus.runStream(message, chatId);
     }
 
     /**

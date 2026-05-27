@@ -59,7 +59,7 @@ public abstract class ReActAgent extends BaseAgent {
     }
 
     // 在 ReActAgent 中添加
-    public Flux<String> runStream(String userPrompt) {
+    public Flux<String> runStream(String userPrompt, String chatId) {
         return Flux.<String>create(sink -> {
                     // 1. 基础校验与初始化（与同步 run 方法相同）
                     if (getState() != AgentState.IDLE) {
@@ -84,7 +84,12 @@ public abstract class ReActAgent extends BaseAgent {
                     }
                     sink.complete();
                 }, FluxSink.OverflowStrategy.LATEST)
-                .doFinally(signalType -> cleanup());
+                .doFinally(signalType -> {
+                    if (StrUtil.isNotBlank(chatId)) {
+                        saveHistory(chatId);
+                    }
+                    cleanup();
+                });
     }
 
     /**

@@ -2,6 +2,7 @@ package com.wxl.agent.agent;
 
 import com.wxl.agent.advisor.MyLoggerAdvisor;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -14,8 +15,10 @@ import org.springframework.stereotype.Component;
 public class Manus extends ToolCallAgent {
 
     public Manus(ToolCallback[] allTools,
-                 @Qualifier("agentChatClient") ChatClient chatClient) {
+                 @Qualifier("agentChatClient") ChatClient chatClient,
+                 ChatMemory chatMemory) {
         super(allTools);
+        this.setChatMemory(chatMemory);
         this.setName("Manus");
         String SYSTEM_PROMPT = """
                 You are Manus, an all-capable AI assistant, aimed at solving any task presented by the user.
