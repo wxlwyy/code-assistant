@@ -32,6 +32,16 @@ server:
 # 用来初始化知识库
 app:
   init-vectorstore: false  # 导完数据手动改成 false
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  # 开发时看 SQL
+  global-config:
+    db-config:
+      logic-delete-field: isDeleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
 # springdoc-openapi项目配置
 springdoc:
   swagger-ui:

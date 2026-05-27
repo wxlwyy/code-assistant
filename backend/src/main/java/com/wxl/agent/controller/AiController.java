@@ -4,6 +4,8 @@ import com.wxl.agent.agent.Manus;
 import com.wxl.agent.app.LoveApp;
 import com.wxl.agent.common.BaseResponse;
 import com.wxl.agent.common.ResultUtils;
+import com.wxl.agent.model.dto.ai.AiChatRequest;
+import com.wxl.agent.service.ChatSessionService;
 import jakarta.annotation.Resource;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.ai.chat.client.ChatClient;
@@ -13,9 +15,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import reactor.core.publisher.Flux;
 
@@ -32,12 +32,52 @@ public class AiController {
 
     private final ChatClient chatClient;
 
-    public AiController(LoveApp loveAp,
+    private final ChatSessionService chatSessionService;
+
+    public AiController(LoveApp loveApp,
                         ToolCallback[] allTools,
-                        @Qualifier("agentChatClient") ChatClient chatClient) {
-        this.loveApp = loveAp;
+                        @Qualifier("agentChatClient") ChatClient chatClient,
+                        ChatSessionService chatSessionService) {
+        this.loveApp = loveApp;
         this.allTools = allTools;
         this.chatClient = chatClient;
+        this.chatSessionService = chatSessionService;
+    }
+
+    /**
+     * SSE 流式调用 AI 恋爱大师应用
+     * 第一种：Flux<String>（标准写法，最常用）
+     * 原理：设置响应类型为 text/event-stream，告诉浏览器“我将持续发送 SSE 事件流”。方法返回 Flux<String>，
+     * Spring WebFlux 会自动把每个字符串包装成 SSE 事件的 data 字段，发送给客户端。
+     * 适用场景：90% 的流式传输场景。前端只需标准 EventSource API 就能消费。
+     * @param aiChatRequest
+     * @return
+     */
+    @PostMapping(value = "/love_app/chat/sse", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<String> doChatWithLoveAppSSE(@Validated @RequestBody AiChatRequest aiChatRequest) {
+        String chatId = aiChatRequest.getChatId();
+        String message = aiChatRequest.getMessage();
+        chatSessionService.initSessionIfAbsent(chatId, message, "STANDARD");
+
+        return loveApp.doChatByStream(message, chatId);
+    }
+
+    /**
+     * 流式调用 Manus 超级智能体
+     * Validated：Spring 提供的注解，加在类上，告诉 Spring “这个类的方法参数需要校验”。
+     * NotBlank：一个约束注解，表示字符串不能为 null，且长度必须大于 0，且不能全是空白字符。
+     *
+     * @param aiChatRequest
+     * @return
+     */
+    @PostMapping("/manus/chat/sse")
+    public Flux<String> doChatWithManusSSE(@Validated @RequestBody AiChatRequest aiChatRequest) {
+        String chatId = aiChatRequest.getChatId();
+        String message = aiChatRequest.getMessage();
+        chatSessionService.initSessionIfAbsent(chatId, message, "REASONING");
+
+        Manus manus = new Manus(allTools, chatClient);
+        return manus.runStream(message);
     }
 
     /**
@@ -55,22 +95,6 @@ public class AiController {
 
     /**
      * SSE 流式调用 AI 恋爱大师应用
-     * 第一种：Flux<String>（标准写法，最常用）
-     * 原理：设置响应类型为 text/event-stream，告诉浏览器“我将持续发送 SSE 事件流”。方法返回 Flux<String>，
-     * Spring WebFlux 会自动把每个字符串包装成 SSE 事件的 data 字段，发送给客户端。
-     * 适用场景：90% 的流式传输场景。前端只需标准 EventSource API 就能消费。
-     * @param message
-     * @param chatId
-     * @return
-     */
-    @GetMapping(value = "/love_app/chat/sse", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public BaseResponse<Flux<String>> doChatWithLoveAppSSE(String message, String chatId) {
-        Flux<String> stringFlux = loveApp.doChatByStream(message, chatId);
-        return ResultUtils.success(stringFlux);
-    }
-
-    /**
-     * SSE 流式调用 AI 恋爱大师应用
      * 第二种：Flux<ServerSentEvent<String>>（精细控制，偶尔用）
      * 区别：把每个字符串手动包装成 ServerSentEvent 对象。你可以在此基础上，给每个事件添加 id、event（事件类型）、
      * retry（重连时间）、comment（注释）等 SSE 协议支持的字段。什么时候用到：前端需要区分不同事件类型
@@ -80,12 +104,12 @@ public class AiController {
      * @return
      */
     @GetMapping(value = "/love_app/chat/server_sent_event")
-    public BaseResponse<Flux<ServerSentEvent<String>>> doChatWithLoveAppServerSentEvent(String message, String chatId) {
+    public Flux<ServerSentEvent<String>> doChatWithLoveAppServerSentEvent(String message, String chatId) {
         Flux<ServerSentEvent<String>> map = loveApp.doChatByStream(message, chatId)
                 .map(chunk -> ServerSentEvent.<String>builder()
                         .data(chunk)
                         .build());
-        return ResultUtils.success(map);
+        return map;
     }
 
     /**
@@ -115,20 +139,59 @@ public class AiController {
 //        // 返回
 //        return sseEmitter;
 //    }
-
-    /**
-     * 流式调用 Manus 超级智能体
-     * Validated：Spring 提供的注解，加在类上，告诉 Spring “这个类的方法参数需要校验”。
-     * NotBlank：一个约束注解，表示字符串不能为 null，且长度必须大于 0，且不能全是空白字符。
-     *
-     * @param message
-     * @return
-     */
-    @GetMapping("/manus/chat/sse")
-    public BaseResponse<Flux<String>> doChatWithManusSSE(
-            @NotBlank(message = "用户提示词不能为空") String message) { // 参数上加约束注解
-        Manus manus = new Manus(allTools, chatClient);
-        Flux<String> stringFlux = manus.runStream(message);
-        return ResultUtils.success(stringFlux);
-    }
 }
+
+/**
+ * 分清两种传参方式
+ *
+ * 1. 原来的 GET 写法
+ *
+ * GET 请求参数默认放在URL地址栏，对应注解：@RequestParam
+ *
+ * - 单个/多个零散参数（message、chatId），不用封装对象
+ * - 代码形态：
+ *
+ * java
+ *
+ * @GetMapping("/chat/sse")
+ * public Flux<String> chatSse(
+ *     String message,
+ *     String chatId
+ * ) {
+ *     // 底层等价于自动加了 @RequestParam
+ * }
+ *
+ *
+ * 浏览器/EventSource 调用时，地址长这样：
+ * /chat/sse?message=你好&chatId=abc123
+ *
+ * 2. 改成 POST + SSE 流式
+ *
+ * POST 传复杂参数，规范做法是把参数放到JSON 请求体，对应注解：@RequestBody
+ *
+ * - 零散参数必须封装成一个 DTO 对象
+ * - 接口必须加 @PostMapping + @RequestBody + 开启校验 @Validated
+ * - 响应头指定流式格式 produces = MediaType.TEXT_EVENT_STREAM_VALUE
+ *
+ *
+ *
+ * 1. GET 为什么不用写 @RequestParam？
+ *
+ * Spring MVC 规则：
+ *
+ * - GET 请求、普通零散参数，可以省略 @RequestParam，框架自动识别；
+ * - 本质还是请求参数绑定，数据来自 URL。
+ *
+ * 2. 改成 POST 后，能不能继续用零散参数？
+ *
+ * 技术上可以（用 @RequestParam 拼在 URL），但不推荐、不符合企业规范：
+ *
+ * - 违背 POST 语义；
+ * - 长文本、敏感内容依然暴露在 URL；
+ * - 既然改成 POST，就统一用 JSON 请求体 + DTO + @RequestBody。
+ *
+ * 3. 为什么一定要封装 DTO？
+ *
+ * @RequestBody 规则：只能接收一个对象，不能直接接收多个零散字符串参数。
+ * 所以必须把 message、chatId 打包成一个实体/DTO。
+ */
