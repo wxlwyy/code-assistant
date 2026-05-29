@@ -1,9 +1,9 @@
-/*
 package com.wxl.agent.config;
 
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.OpenAPI;
+import org.springdoc.core.utils.SpringDocUtils;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import io.swagger.v3.oas.models.info.Info;
@@ -11,11 +11,33 @@ import io.swagger.v3.oas.models.Components;
 import java.util.Collections;
 import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.Operation;
+import org.springframework.http.HttpHeaders;
 
 @Configuration
 public class SwaggerConfig {
 
-    private static final String SECURITY_SCHEME_NAME = "Authorization";
+    // 💡 核心：在类加载时，全局配置 SpringDoc 自动将所有 Long/long 替换为 String 规范
+    static {
+        SpringDocUtils.getConfig().replaceWithClass(Long.class, String.class);
+        SpringDocUtils.getConfig().replaceWithClass(long.class, String.class);
+    }
+
+    @Bean
+    public OpenAPI customOpenAPI() {
+        final String securitySchemeName = HttpHeaders.AUTHORIZATION;
+
+        return new OpenAPI()
+                .addSecurityItem(new SecurityRequirement().addList(securitySchemeName))
+                .components(new Components()
+                        .addSecuritySchemes(securitySchemeName, new SecurityScheme()
+                                .name(securitySchemeName)
+                                .type(SecurityScheme.Type.HTTP)
+                                .scheme("bearer")
+                                .bearerFormat("JWT")
+                        ));
+    }
+
+    /*private static final String SECURITY_SCHEME_NAME = "Authorization";
 
     @Bean
     public OpenAPI customOpenAPI() {
@@ -31,5 +53,5 @@ public class SwaggerConfig {
                                         .description("在此输入JWT Token")))
                 // 2. 全局应用安全方案
                 .addSecurityItem(new SecurityRequirement().addList(SECURITY_SCHEME_NAME));
-    }
-}*/
+    }*/
+}
