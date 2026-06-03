@@ -30,7 +30,7 @@
 <script setup lang="ts">
 // 定义向父组件发送的事件
 const emit = defineEmits<{
-  (e: 'toggle-sidebar'): void
+  (e: 'toggle-sidebar'): void  // void表示表示事件函数没返回值也不带参数
 }>()
 
 // 点击按钮时，通知父组件

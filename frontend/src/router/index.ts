@@ -6,15 +6,20 @@ const routes: RouteRecordRaw[] = [
   // 1. 登录页：全屏展示，不走任何 Layout 外壳
   {
     path: '/login',
-    name: 'Login',
-    component: () => import('../pages/Login/index.vue') // 👈 懒加载引入
+    name: 'LoginPage',
+    component: () => import('../pages/LoginPage.vue') // 懒加载引入
   },
-
+  // 2. 注册页
+  {
+    path: '/register',
+    name: 'RegisterPage',
+    component: () => import('../pages/RegisterPage.vue')
+  },
   // 2. 核心业务页：全部嵌套在 BasicLayout 外壳中
   {
     path: '/',
-    component: () => import('../layouts/BasicLayout.vue'), // 👈 父路由指向大盒子
-    redirect: '/chat', // 默认重定向到 /chat 路径
+    component: () => import('../layouts/BasicLayout.vue'), //  父路由指向大盒子
+    /*redirect: '/chat', // 默认重定向到 /chat 路径
     children: [
       {
         // 动态路由设计：:id? 带有问号代表参数是可选的。
@@ -22,9 +27,9 @@ const routes: RouteRecordRaw[] = [
         // 访问 /chat/123-abc ➡ 代表“正在进行特定的历史会话”
         path: 'chat/:id?',
         name: 'ChatWorkspace',
-        component: () => import('../pages/ChatWorkspace/index.vue') // 👈 子路由组件会被渲染在 BasicLayout 的 router-view 中
+        component: () => import('../pages/ChatWorkspace.vue') // 子路由组件会被渲染在 BasicLayout 的 router-view 中
       }
-    ]
+    ]*/
   },
 
   // 3. 兜底路由：如果输入了不存在的地址，直接重定向回首页
@@ -45,8 +50,8 @@ router.beforeEach(async (to, from, next) => {
   const userStore = useUserStore()
   const token = localStorage.getItem('token')
 
-  // 1. 如果用户访问的是登录页
-  if (to.path === '/login') {
+  // 1. 如果访问的是【登录页】或【注册页】（白名单）
+  if (to.path === '/login' || to.path === '/register') {
     if (token) {
       // 如果已经有 token 了，还访问登录页，直接送他去首页
       return next('/')
@@ -54,9 +59,9 @@ router.beforeEach(async (to, from, next) => {
     return next() // 没 token，正常放行让他去登录
   }
 
-  // 2. 如果访问的是其他页面（比如 /chat），必须校验 Token
+  // 2. 如果访问的是其他页面（比如 /chat 或 / ），必须校验 Token
   if (!token) {
-    return next('/login') // 没 token，直接踢回登录页
+    return next('/login') // 没 token，直接去登录页，注意next('/login')也会触发路由守卫
   }
 
   // 3. 有 token，但内存里还没加载用户信息（比如刚刷新了网页）
@@ -64,7 +69,7 @@ router.beforeEach(async (to, from, next) => {
     // 强制等待拉取最新用户信息
     await userStore.fetchLoginUser()
 
-    // 如果拉取完还是没 ID（说明 token 伪造或过期了，fetchLoginUser 里已经清空了 token）
+    // 如果拉取完还是没 ID（说明 token 伪造或过期了，并且在 fetchLoginUser 里清空 token）
     if (!userStore.loginUser.id) {
       return next('/login')
     }
