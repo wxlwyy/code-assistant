@@ -19,17 +19,15 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/',
     component: () => import('../layouts/BasicLayout.vue'), //  父路由指向大盒子
-    /*redirect: '/chat', // 默认重定向到 /chat 路径
+    redirect: '/chat', // 跳转到 /chat 路径，相当于router.push
     children: [
       {
-        // 动态路由设计：:id? 带有问号代表参数是可选的。
-        // 访问 /chat ➡ 代表“新建对话”（欢迎页状态）
-        // 访问 /chat/123-abc ➡ 代表“正在进行特定的历史会话”
-        path: 'chat/:id?',
+        // 动态路由设计：:id? 带有问号代表参数是可选的。访问 /chat ➡ 代表“新建对话”（欢迎页状态）。访问 /chat/123-abc ➡ 代表“正在进行特定的历史会话”
+        path: 'chat/:id?',  // 这里注意chat/和chat/1都属于同一页面，只是参数不同，不会触发路由守卫
         name: 'ChatWorkspace',
         component: () => import('../pages/ChatWorkspace.vue') // 子路由组件会被渲染在 BasicLayout 的 router-view 中
       }
-    ]*/
+    ]
   },
 
   // 3. 兜底路由：如果输入了不存在的地址，直接重定向回首页

@@ -33,7 +33,7 @@ export async function requestStream(
       }
     }
 
-    // 如果是 POST 请求，将 body 序列化为 JSON 字符串
+    // 如果是 POST 请求，将 body 序列化为 JSON 字符串。RequestInit的body属性不能直接传js对象，只接收字符串/Blob/FormData等二进制类型，因为js对象是内存结构，浏览器没法直接传给TCP网络。
     if (method === 'POST' && body) {
       fetchOptions.body = JSON.stringify(body)
     }
@@ -45,19 +45,19 @@ export async function requestStream(
       throw new Error(`HTTP 请求失败，状态码: ${response.status}`)
     }
 
-    const reader = response.body?.getReader()
+    const reader = response.body?.getReader() // 响应体是二进制可读流，创建流读取器
     if (!reader) {
       throw new Error('当前浏览器不支持可读流，或者响应体为空')
     }
 
-    const decoder = new TextDecoder('utf-8')
+    const decoder = new TextDecoder('utf-8')  // 二进制转为json字符串
     let buffer = ''
 
     while (true) {
-      const { value, done } = await reader.read()
+      const { value, done } = await reader.read()  // 每次读一小块二进制，done是否流结束
       if (done) break
 
-      const chunkStr = decoder.decode(value, { stream: true })
+      const chunkStr = decoder.decode(value, { stream: true })  // stream: true代表分段解码
       buffer += chunkStr
 
       const lines = buffer.split('\n')

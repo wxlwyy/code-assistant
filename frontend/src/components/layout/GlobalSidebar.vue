@@ -6,64 +6,78 @@
     <div class="w-64 h-full flex flex-col p-4">
 
       <!-- 1. Logo 区域 -->
-      <div class="text-xl font-bold tracking-wider text-gray-900 mb-4 px-2 flex items-center space-x-2">
+      <div class="text-xl font-bold tracking-wider text-gray-900 mb-6 px-2 flex items-center space-x-2">
         <span class="text-2xl"></span>
         <span>AI 超级智能体</span>
       </div>
 
       <!-- 2. 新建对话按钮 -->
-      <button class="w-full py-2.5 px-4 mb-4 bg-gray-900 hover:bg-gray-800 text-white rounded-xl font-medium flex items-center justify-center space-x-2 transition-colors cursor-pointer shadow-sm">
+      <!-- 点击时路由跳转到 /chat (不带 id)，就是新建模式 -->
+      <button
+        @click="router.push('/chat')"
+        class="w-full py-2.5 px-4 mb-4 bg-gray-900 hover:bg-gray-800 text-white rounded-xl font-medium flex items-center justify-center space-x-2 transition-colors cursor-pointer shadow-sm"
+      >
         <el-icon><Plus /></el-icon>
         <span>新建对话</span>
       </button>
 
-      <!-- 3. 历史会话列表区域（目前还是假数据，下一关我们就来通电！） -->
-      <div class="flex-1 overflow-y-auto space-y-1.5 py-2">
-        <div class="px-3 py-2 rounded-lg bg-gray-50 text-gray-700 text-sm font-medium cursor-pointer">
-          💬 恋爱聊天会话 1
+      <!-- 3. 历史会话列表区域 (引入真实数据) -->
+      <div class="flex-1 overflow-y-auto space-y-1.5 py-2 pr-1 custom-scrollbar">
+        <!-- 如果正在加载，给个简单的提示 -->
+        <div v-if="chatStore.isLoadingSessions" class="text-center text-xs text-gray-400 py-4">
+          加载中...
         </div>
-        <div class="px-3 py-2 rounded-lg hover:bg-gray-50 text-gray-600 hover:text-gray-800 text-sm cursor-pointer transition-colors">
-          💬 Manus 智能体搜索
+
+        <!-- 没有历史记录时的空状态 -->
+        <div v-else-if="chatStore.sessionList.length === 0" class="text-center text-xs text-gray-400 py-4">
+          暂无历史对话
+        </div>
+
+        <!-- 渲染真实的列表数据，只要浏览器的的地址发生变化，就会走路由守卫，守卫放行之后页面才会切换，route.params才能提取地址栏的动态参数 -->
+        <div
+          v-for="item in chatStore.sessionList"
+          :key="item.id"
+          @click="router.push(`/chat/${item.id}`)"
+          class="group relative px-3 py-2.5 rounded-lg text-sm font-medium cursor-pointer transition-colors flex items-center justify-between"
+          :class="$route.params.id === item.id ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'"
+        >
+          <!-- 标题（带截断） -->
+          <div class="flex items-center space-x-2 truncate">
+<!--            <span class="text-base">{{ item.agentType === 'REASONING' ? '🤖' : '❤️' }}</span>-->
+            <span class="truncate">{{ item.title }}</span>
+          </div>
+
+          <!-- 隐藏的删除按钮：鼠标悬浮时(group-hover)才会显示，点击时加上 .stop 阻止事件冒泡触发外层的跳转到详情页面 -->
+          <button
+            @click.stop="handleDeleteSession(item.id)"
+            class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity p-1 rounded-md"
+          >
+            <el-icon><Delete /></el-icon>
+          </button>
         </div>
       </div>
 
-      <!-- 4. 💡 底部：个人中心/设置（使用 Element Plus 的 Dropdown 组件包裹） -->
-      <div class="border-t border-gray-100 pt-4 mt-2">
-        <!-- el-dropdown 触发器，设为 click 点击触发弹出菜单内容 -->
+      <!-- 4. 💡 底部个人中心 (加上 mt-auto 强制死死钉在底部！) -->
+      <div class="mt-auto border-t border-gray-100 pt-4 pb-2">
         <el-dropdown trigger="click" placement="top-start" class="w-full">
-          <!-- 触发区域（用来被点击或交互）：也就是用户卡片，用的默认插槽（没有名字） -->
           <div class="w-full flex items-center space-x-3 px-2 py-2 hover:bg-gray-50 rounded-xl cursor-pointer transition-colors">
-            <!-- 左侧头像：如果有真实头像就用真实的，没有就用默认的可爱默认图 -->
-            <!--属性前的冒号或v-bind是把引号里的内容当js表达式，值会随着变量变化，这里的36是因为数字或布尔类型放在引号里容易被当成字符串，要想传真实数据类型，必须加冒号-->
-            <el-avatar
-              :size="36"
-              :src="userStore.loginUser.userAvatar || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'"
-            />
+            <el-avatar :size="36" :src="userStore.loginUser.userAvatar || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'" />
             <div class="flex-1 min-w-0 text-left">
-              <!-- 右上侧昵称：取 userName，如果没有则显示 userAccount -->
               <p class="text-sm font-medium text-gray-700 truncate">
                 {{ userStore.loginUser.userName || userStore.loginUser.userAccount }}
               </p>
-              <!-- 右下侧：角色如果是管理员，亮出一个炫酷的 Badge -->
-              <p class="text-xs text-gray-400 mt-0.5 flex items-center">
+              <p class="text-xs text-gray-400 mt-0.5">
                 <span v-if="userStore.loginUser.userRole === 'admin'" class="bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded text-[10px] font-bold mr-1">PRO</span>
-                <span>{{ userStore.loginUser.userRole === 'admin' ? '超级管理员' : '普通用户' }}</span>
+                {{ userStore.loginUser.userRole === 'admin' ? '超级管理员' : '普通用户' }}
               </p>
             </div>
-            <!-- 最右侧小点点图标，暗示可以点击 -->
             <el-icon class="text-gray-400"><MoreFilled /></el-icon>
           </div>
 
-          <!-- 弹出的菜单内容，这里用了具名插槽，template #dropdown 是简写，template v-solt:dropdown是完整写法-->
           <template #dropdown>
             <el-dropdown-menu class="w-56">
-              <el-dropdown-item>
-                <el-icon><User /></el-icon> 个人信息
-              </el-dropdown-item>
-              <el-dropdown-item>
-                <el-icon><Setting /></el-icon> 系统设置
-              </el-dropdown-item>
-              <!--divided是给菜单选项加一条分割线-->
+              <el-dropdown-item><el-icon><User /></el-icon> 个人信息</el-dropdown-item>
+              <el-dropdown-item><el-icon><Setting /></el-icon> 系统设置</el-dropdown-item>
               <el-dropdown-item divided @click="handleLogout" class="text-red-500 hover:text-red-600 hover:bg-red-50">
                 <el-icon><SwitchButton /></el-icon> 退出登录
               </el-dropdown-item>
@@ -77,45 +91,66 @@
 </template>
 
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
+import { onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { useChatStore } from '@/stores/chat'
 import { ElMessageBox, ElMessage } from 'element-plus'
 
-// 接收父组件传递过来的侧边栏折叠状态
-defineProps<{
-  isCollapsed: boolean
-}>()
+defineProps<{ isCollapsed: boolean }>()
 
 const router = useRouter()
+const route = useRoute()
 const userStore = useUserStore()
+const chatStore = useChatStore()
 
-/**
- * 处理退出登录逻辑（企业级防误触做法）
- */
-const handleLogout = () => {
-  // 弹出二次确认框，防止用户手滑点错
-  ElMessageBox.confirm(
-    '确认要退出当前登录账号吗？',
-    '提示',
-    {
-      confirmButtonText: '确定退出',
-      cancelButtonText: '取消',
-      type: 'warning',
+// 页面挂载时，去拉取真实的会话列表
+onMounted(() => {
+  chatStore.fetchSessionList()
+})
+
+// 删除会话的防误触拦截
+const handleDeleteSession = (id: string) => {
+  ElMessageBox.confirm('确定要删除这条对话历史吗？', '提示', {
+    type: 'warning',
+    confirmButtonText: '删除',
+    cancelButtonText: '取消'
+  }).then(() => {
+    chatStore.removeSession(id)
+    // 如果当前删掉的正是你正在聊天的会话，就把页面踢回“新建对话”模式
+    if (route.params.id === id) {
+      router.push('/chat')
     }
-  ).then(() => {
-    // 1. 调用 Pinia Store 里的清理方法，删掉本地 Token 和状态
+  }).catch(() => {})
+}
+
+// 退出登录逻辑
+const handleLogout = () => {
+  ElMessageBox.confirm('确认要退出当前登录账号吗？', '提示', {
+    type: 'warning',
+    confirmButtonText: '退出',
+    cancelButtonText: '取消',
+  }).then(() => {
     userStore.clearLoginState()
-
-    // 2. 提示成功
     ElMessage.success('已安全退出')
-
-    // 3. 强制页面跳转到登录页
     router.push('/login')
-  }).catch(() => {
-    // 用户点击取消，什么都不做
-  })
+  }).catch(() => {})
 }
 </script>
+
+<style scoped>
+/* 给历史列表的滚动条做个美化，让它像 MacOS 一样好看 */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #e5e7eb;
+  border-radius: 4px;
+}
+.custom-scrollbar:hover::-webkit-scrollbar-thumb {
+  background-color: #d1d5db;
+}
+</style>
 
 
 

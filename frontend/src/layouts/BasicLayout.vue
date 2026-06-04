@@ -22,17 +22,9 @@
         <GlobalHeader @toggle-sidebar="toggleSidebar"/>
       </header>
 
-      <!-- 2.2 核心工作区（目前我们在这个大盒子里渲染具体的聊天业务） -->
+      <!-- 2.2 核心工作区（在这个大盒子里渲染具体的聊天业务） -->
       <main class="flex-1 overflow-hidden relative bg-gray-50 flex flex-col">
-        <!--
-          临时放一个假的“聊天欢迎页”作为占位，
-          等会儿我们会把它抽取到单独的业务组件或页面中！
-        -->
-        <div class="flex-1 flex flex-col items-center justify-center p-6">
-          <div class="text-4xl mb-4">👋</div>
-          <h2 class="text-2xl font-bold text-gray-800">今天想聊点什么？</h2>
-          <p class="text-sm text-gray-500 mt-2">请在下方选择一个对话模式开始吧</p>
-        </div>
+        <router-view/>
       </main>
     </div>
 

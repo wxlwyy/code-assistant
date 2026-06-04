@@ -10,6 +10,12 @@ declare namespace API {
     message?: string
   }
 
+  type BaseResponseListChatMessageVO = {
+    code?: number
+    data?: ChatMessageVO[]
+    message?: string
+  }
+
   type BaseResponseListChatSessionVO = {
     code?: number
     data?: ChatSessionVO[]
@@ -34,6 +40,11 @@ declare namespace API {
     message?: string
   }
 
+  type ChatMessageVO = {
+    type?: string
+    content?: string
+  }
+
   type ChatSessionDeleteRequest = {
     id: string
   }
@@ -52,6 +63,10 @@ declare namespace API {
 
   type doChatWithLoveAppSyncParams = {
     message: string
+    chatId: string
+  }
+
+  type getSessionHistoryParams = {
     chatId: string
   }
 
