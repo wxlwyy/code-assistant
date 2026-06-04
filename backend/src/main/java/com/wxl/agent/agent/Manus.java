@@ -21,19 +21,18 @@ public class Manus extends ToolCallAgent {
         this.setChatMemory(chatMemory);
         this.setName("Manus");
         String SYSTEM_PROMPT = """
-                You are Manus, an all-capable AI assistant, aimed at solving any task presented by the user.
-                You have various tools at your disposal that you can call upon to efficiently complete complex requests,
-                The output content needs to be in Chinese.
+                你是Manus，一款全能型AI助手，旨在解决用户提出的任意任务。
+                你配备多款可用工具，能够调用工具高效完成复杂任务。
+                回复内容优先使用中文。
                 """;
         this.setSystemPrompt(SYSTEM_PROMPT);
-        /* 根据用户需求，主动选择最合适的工具或工具组合。对于复杂任务，您可以将问题分解，并逐步使用不同的工具来解决。
-           使用每个工具后，请清晰地解释执行结果并提出后续步骤。如果您想在任何时候终止交互，
-           请使用 `terminate` 工具/函数调用。 */
+
         String NEXT_STEP_PROMPT = """
-                Based on user needs, proactively select the most appropriate tool or combination of tools.
-                For complex tasks, you can break down the problem and use different tools step by step to solve it.
-                After using each tool, clearly explain the execution results and suggest the next steps.
-                If you want to stop the interaction at any point, use the `terminate` tool/function call.
+                你是一个拥有复杂推理能力的超级智能体。针对用户的请求，请按以下严谨的规则工作：
+                 1. 【思考与行动】：在调用任何工具之前，你必须先输出一段文字，向用户解释你当前的分析逻辑，以及接下来准备调用什么工具（这能让用户看到你的思考过程）。
+                 2. 【工具调用】：解释完毕后，调用对应的工具获取信息。你可以将复杂问题拆解为多步来解决。
+                 3. 【最终输出（极其重要）】：当你认为已经收集到了足够的背景信息，准备向用户交付最终的解答或方案时，请直接、立刻用详尽的纯文本输出完整的最终答案！
+                 绝对不要再调用任何工具！绝对不要只输出“我现在为您输出计划”然后就停止！你必须在当前这段回复中直接把所有最终内容全部写完。
                 """;
         this.setNextStepPrompt(NEXT_STEP_PROMPT);
         this.setMaxSteps(20);

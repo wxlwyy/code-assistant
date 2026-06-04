@@ -1,5 +1,6 @@
 package com.wxl.agent.tool;
 
+import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
@@ -15,6 +16,57 @@ import java.util.stream.Collectors;
 /**
  * 网页搜索工具
  */
+public class WebSearchTool {
+
+    // 修改为 Serper.dev 的接口地址
+    private static final String SEARCH_API_URL = "https://google.serper.dev/search";
+
+    private final String apiKey;
+
+    public WebSearchTool(String apiKey) {
+        this.apiKey = apiKey;
+    }
+
+    @Tool(description = "Search for information from Google Search Engine")
+    public String searchWeb(
+            @ToolParam(description = "Search query keyword") String query) {
+        try {
+            // 构造 JSON 请求体（只需要 q 参数）
+            String requestBody = JSONUtil.toJsonStr(Map.of("q", query));
+
+            // 发送 POST 请求：API Key 放入 X-API-KEY 请求头
+            String response = HttpRequest.post(SEARCH_API_URL)
+                    .header("X-API-KEY", apiKey)
+                    .header("Content-Type", "application/json")
+                    .body(requestBody)
+                    .execute()
+                    .body();
+
+            // 解析响应 JSON
+            JSONObject jsonObject = JSONUtil.parseObj(response);
+
+            // Serper.dev 的搜索结果在 "organic" 数组中
+            JSONArray organicResults = jsonObject.getJSONArray("organic");
+            if (organicResults == null || organicResults.isEmpty()) {
+                return "No results found.";
+            }
+
+            // 取前 5 条
+            int limit = Math.min(5, organicResults.size());
+            List<Object> topResults = organicResults.subList(0, limit);
+
+            // 拼接结果
+            return topResults.stream()
+                    .map(obj -> ((JSONObject) obj).toString())
+                    .collect(Collectors.joining(","));
+
+        } catch (Exception e) {
+            return "Error searching Google: " + e.getMessage();
+        }
+    }
+}
+
+/*
 public class WebSearchTool {
 
     // SearchAPI 的搜索接口地址
@@ -50,4 +102,4 @@ public class WebSearchTool {
             return "Error searching Baidu: " + e.getMessage();
         }
     }
-}
+}*/

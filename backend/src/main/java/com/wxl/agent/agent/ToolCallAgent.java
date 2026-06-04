@@ -95,6 +95,8 @@ public class ToolCallAgent extends ReActAgent {
             if (toolCallList.isEmpty()) {
                 // 只有不调用工具时，才需要手动记录助手消息
                 getMessageList().add(assistantMessage);
+                // 必须加上这行！！！告诉整个系统，模型得出最终结论了，任务结束！
+                this.setState(AgentState.FINISHED);
                 return false;
             } else {
                 // 需要调用工具时，无需记录助手消息，交给act方法来记录

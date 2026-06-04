@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class ToolRegistration {
 
-    @Value("${search-api.api-key}")
+    @Value("${serper-api.api-key}")
     private String searchApiKey;
 
     @Bean
@@ -30,8 +30,8 @@ public class ToolRegistration {
                 webScrapingTool,
                 resourceDownloadTool,
                 terminalOperationTool,
-                pdfGenerationTool,
-                terminateTool
+                pdfGenerationTool
+//                terminateTool
         );
     }
 }

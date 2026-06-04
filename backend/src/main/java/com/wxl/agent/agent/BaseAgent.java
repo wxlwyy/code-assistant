@@ -41,7 +41,7 @@ public abstract class BaseAgent {
 
     // 执行步骤控制
     private int currentStep = 0;
-    private int maxSteps = 10;
+    private int maxSteps = 20;
 
     // 对话客户端（设置大模型、提示词、拦截器等信息）
     private ChatClient chatClient;
