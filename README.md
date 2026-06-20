@@ -1,6 +1,7 @@
-# DeepReason AI
+# 编程学习助手
 
-基于 Spring AI 的深度思考型 AI 对话平台，支持 ReAct 多轮工具调用与 SSE 流式传输。
+项目简介：基于 Spring Boot + Spring AI + RAG + Tool Calling 的 AI 编程学习智能体，支持多轮对话、知识库检索与工具自主调用，
+实现个性化编程学习与实时问题解答。
 
 ## 核心特性
 
